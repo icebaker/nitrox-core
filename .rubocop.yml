@@ -1,0 +1,13 @@
+AllCops:
+  TargetRubyVersion: 3.2.1
+  NewCops: enable
+
+Style/Documentation:
+  Enabled: false
+
+Naming/FileName:
+  Exclude:
+    - 'ports/dsl/nitrox-core.rb'
+
+require:
+ - rubocop-rspec
