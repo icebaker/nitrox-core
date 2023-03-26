@@ -16,7 +16,7 @@ module NitroxCoreInternal
       return unless connection.nil?
 
       config = NitroxCore.helpers.hash.symbolize_keys(
-        NitroxCore.api.fetch('nitrox-connector', "/connections/#{connection_id}")
+        NitroxCore.api.fetch('nitrox-proxy', "/nitrox-connector/connections/#{connection_id}")
       )
 
       Lighstorm::Connection.add!(connection_id, **config.slice(:address, :certificate, :macaroon))
