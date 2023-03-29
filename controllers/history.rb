@@ -10,8 +10,10 @@ module NitroxCoreInternal
       "#{headers['Nitrox-Connection-Id'].split('@').last}/#{topic}/#{headers['Idempotency-Key']}"
     end
 
-    def self.index_key(topic, headers)
-      "#{headers['Nitrox-Connection-Id'].split('@').last}/#{topic}/index"
+    def self.index_key(topic, headers, params = {})
+      connection = headers['Nitrox-Connection-Id'] || params['connection_id']
+
+      "#{connection.split('@').last}/#{topic}/index"
     end
 
     def self.add(topic, headers, data)
@@ -20,7 +22,7 @@ module NitroxCoreInternal
 
       return if Badger.instance.exists?(item_key)
 
-      item = { created_at: Time.now, index: index_key, key: item_key, state: 'pending', data: data }
+      item = { created_at: Time.now, index: index_key, key: item_key, state: 'pending', pending: { data: } }
 
       Badger.instance.set(item_key, item)
 
@@ -33,8 +35,8 @@ module NitroxCoreInternal
       Badger.instance.set(index_key, history)
     end
 
-    def self.index(topic, headers)
-      index_key = self.index_key(topic, headers)
+    def self.index(topic, headers, params)
+      index_key = self.index_key(topic, headers, params)
 
       (Badger.instance.get(index_key) || []).map do |item_key|
         Badger.instance.get(item_key)
@@ -45,7 +47,7 @@ module NitroxCoreInternal
       item_key = self.item_key(topic, headers)
 
       raise "key don't exists! #{item_key}" unless Badger.instance.exists?(item_key)
-      
+
       Badger.instance.get(item_key)
     end
 
@@ -53,11 +55,11 @@ module NitroxCoreInternal
       item_key = self.item_key(topic, headers)
 
       raise "key don't exists! #{item_key}" unless Badger.instance.exists?(item_key)
-        
+
       item = Badger.instance.get(item_key)
 
       item[:state] = state
-      item[state.to_sym] = { at: Time.now, data: data }
+      item[state.to_sym] = { at: Time.now, data: }
 
       Badger.instance.set(item_key, item)
     end

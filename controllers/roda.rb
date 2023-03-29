@@ -1,12 +1,24 @@
 # frozen_string_literal: true
 
+require_relative '../logic/json'
+
 module NitroxCoreInternal
   module RodaController
     def self.safely_ensure_json(response, &block)
       block.call
     rescue StandardError => e
       response.status = 500
-      { error: e.class, message: e.message, backtrace: e.backtrace }
+
+      {
+        error: e.class,
+        message: e.message,
+        backtrace: e.backtrace,
+        response: {
+          status: NitroxCore::Helpers::JSONHelper.safe_generate(response.status),
+          headers: NitroxCore::Helpers::JSONHelper.safe_generate(response.headers),
+          body: NitroxCore::Helpers::JSONHelper.safe_generate(response.body)
+        }
+      }
     end
 
     def self.headers(request)
