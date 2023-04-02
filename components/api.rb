@@ -16,7 +16,11 @@ module API
                  Faraday::Connection.new.get(url) { |request| request.options.timeout = timeout }
                end
 
-    JSON.parse(response.body)
+    begin
+      JSON.parse(response.body)
+    rescue StandardError => e
+      raise e.class, "#{e.message} -> #{url}"
+    end
   end
 
   def self.put(api, path, params = {})

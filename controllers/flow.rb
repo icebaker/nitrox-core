@@ -4,36 +4,49 @@ require_relative 'history'
 
 module NitroxCoreInternal
   module FlowController
-
     def self.to_fleeting(topic, item)
       fleeting = {
-          _key: Digest::SHA256.hexdigest(item[:key]),
-          _fleeting: true,
-          topic: topic,
-          at: item[:created_at],
-          state: item[:state],
-          idempotency_key: item[:data][:headers][:'Idempotency-Key'],
+        _key: Digest::SHA256.hexdigest(item[:key]),
+        _fleeting: true,
+        topic:,
+        at: item[:created_at],
+        state: item[:state],
+        idempotency_key: item[:pending][:data][:headers][:'Idempotency-Key']
+      }
+
+      case fleeting[:state]
+      when 'error'
+        fleeting[:error] = item[:error][:data][:error].except(:backtrace, :result)
+      when 'pending'
+        fleeting[:request] = item[:pending][:data][:body]
+      when 'success'
+        fleeting[:success] = { result: item[:success][:data][:action][:result] }
+      end
+
+      fleeting
+    rescue StandardError => e
+      fleeting = {
+        _key: Digest::SHA256.hexdigest(item[:key]),
+        _fleeting: true,
+        topic:,
+        at: item[:created_at],
+        state: item[:state],
+        error: {
+          class: e.class,
+          message: e.message,
+          backtrace: e.backtrace
         }
-
-        if fleeting[:state] == 'error'
-          fleeting[:error] = item[:error][:data][:error].reject do |key, _|
-            [:backtrace, :result].include?(key)
-          end
-        elsif fleeting[:state] == 'pending'
-          fleeting[:request] = item[:data][:body]
-        end
-
-        fleeting
+      }
     end
 
-    def self.fleeting(topic, headers)
-      self.history(topic, headers).map do |item|
+    def self.fleeting(topic, headers, params)
+      history(topic, headers, params).map do |item|
         to_fleeting(topic, item)
       end.filter { |item| item[:state] != 'success' }
     end
 
-    def self.history(topic, headers)
-      HistoryController.index(topic, headers)
+    def self.history(topic, headers, params)
+      HistoryController.index(topic, headers, params)
     end
 
     def self.state(topic, headers)
@@ -83,11 +96,11 @@ module NitroxCoreInternal
     end
 
     def self.error(topic, message, e)
-      if e.respond_to?(:to_h)
-        error = e.to_h
-      else
-        error = { class: e.class.to_s, message: e.message, backtrace: e.backtrace }
-      end
+      error = if e.respond_to?(:to_h)
+                e.to_h
+              else
+                { class: e.class.to_s, message: e.message, backtrace: e.backtrace }
+              end
 
       error_message = { message:, error: }
 

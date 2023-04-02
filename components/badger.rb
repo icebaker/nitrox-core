@@ -3,7 +3,7 @@
 require 'faraday'
 require 'singleton'
 
-require_relative 'discovery'  
+require_relative 'discovery'
 
 class Badger
   include Singleton
