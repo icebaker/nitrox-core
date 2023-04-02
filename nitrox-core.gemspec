@@ -31,7 +31,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'dalli', '~> 3.2', '>= 3.2.4'
   spec.add_dependency 'faraday', '~> 2.7', '>= 2.7.4'
-  spec.add_dependency 'lighstorm', '~> 0.0.15'
+  spec.add_dependency 'lighstorm', '~> 0.0.16'
   spec.add_dependency 'rainbow', '~> 3.1', '>= 3.1.1'
   spec.add_dependency 'rdkafka', '~> 0.13.0.beta.3'
 
